@@ -1,6 +1,5 @@
 import nuke
 
-
 def set_projection(has_projection=False):
     camera = nuke.thisNode()
 
@@ -20,7 +19,7 @@ def set_projection(has_projection=False):
 
     # other knobs can be added for showing or hiding them when
     # the proj. setup added or removed.
-    knobs = ["projection_frame"]
+    knobs = ["projection_frame", "current_frame"]
 
     # Show/hide the knob(s) while adding/removing the proj. setup.
     for knob in knobs:
@@ -31,7 +30,7 @@ def set_projection(has_projection=False):
         # Create Frame hold node for camera
         framehold_cam = nuke.nodes.FrameHold()
         framehold_cam.setInput(0, camera)
-        framehold_cam.setXYpos(int(camera.xpos()), int(camera.ypos()) + 150)
+        framehold_cam.setXYpos(int(camera.xpos() - 10), int(camera.ypos()) + 150)
         framehold_cam["first_frame"].setExpression(
             f"parent.{camera.name()}.knob.projection_frame")
 
@@ -49,8 +48,23 @@ def set_projection(has_projection=False):
         project3d.setInput(0, framehold_src)
         project3d.setInput(1, framehold_cam)
         project3d.setXYpos(int(framehold_src.xpos()),
-                           int(framehold_src.ypos() + 50))
+                           int(framehold_src.ypos() + 56))
         append_id_knob(id(camera), project3d)
+
+        # Card (3D) node
+        card_3d_geo = nuke.nodes.Card2()
+        card_3d_geo.setInput(0, project3d)
+        card_3d_geo.setXYpos(int(project3d.xpos()),
+                             int(project3d.ypos() + 50))
+        append_id_knob(id(camera), card_3d_geo)
+
+        # Scanline Render node
+        scanline_rndr = nuke.nodes.ScanlineRender()
+        scanline_rndr.setInput(1, card_3d_geo)
+        scanline_rndr.setInput(2, camera)
+        scanline_rndr.setXYpos(int(card_3d_geo.xpos()),
+                               int(card_3d_geo.ypos() + 75))
+        append_id_knob(id(camera), scanline_rndr)
 
         # Set projection frame and projection frame ranges.
         first_frame = int(nuke.root()["first_frame"].getValue())
