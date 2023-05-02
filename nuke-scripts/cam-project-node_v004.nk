@@ -1,0 +1,82 @@
+#! C:/Program Files/Nuke13.0v2/nuke-13.0.2.dll -nx
+version 13.0 v2
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="-1" y="-8" w="1920" h="1027" maximized="1" screen="0">
+        <splitter orientation="1">
+            <split size="1167"/>
+            <splitter orientation="1">
+                <split size="613"/>
+                <splitter orientation="2">
+                    <split size="493"/>
+                    <dock id="" hideTitles="1" activePageId="Properties.1" focus="true">
+                        <page id="Properties.1"/>
+                    </dock>
+                    <split size="492"/>
+                    <dock id="" activePageId="uk.co.thefoundry.scripteditor.1">
+                        <page id="uk.co.thefoundry.scripteditor.1"/>
+                    </dock>
+                </splitter>
+                <split size="506"/>
+                <dock id="" activePageId="NukeServerSocket.MainWindow">
+                    <page id="NukeServerSocket.MainWindow"/>
+                </dock>
+                <split size="40"/>
+                <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                    <page id="Toolbar.1"/>
+                </dock>
+            </splitter>
+            <split size="749"/>
+            <splitter orientation="2">
+                <split size="493"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="492"/>
+                <dock id="" hideTitles="1" activePageId="DAG.1">
+                    <page id="DAG.1"/>
+                </dock>
+            </splitter>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name E:/zExercise/Nuke_Python/Cam-Project-Node/nuke-scripts/cam-project-node_v004.nk
+ frame 1013
+ first_frame 1001
+ last_frame 1250
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement Nuke
+ workingSpaceLUT linear
+ monitorLut sRGB
+ monitorOutLUT rec709
+ int8Lut sRGB
+ int16Lut sRGB
+ logLut Cineon
+ floatLut linear
+}
+Viewer {
+ inputs 0
+ frame_range 1001-1250
+ name Viewer1
+ xpos -6
+ ypos 92
+}
+Camera3 {
+ inputs 0
+ name Camera1
+ selected true
+ xpos -223
+ ypos -172
+ addUserKnob {20 camera_projection l "Camera Projection" -STARTLINE}
+ addUserKnob {52 startup l "" +STARTLINE T "nuke.thisNode()\[\"SET_PROJECTION\"].execute()" +STARTLINE}
+ addUserKnob {22 SET_PROJECTION l "SET PROJECTION" +INVISIBLE T "def set_projection(has_projection=False):\n    camera = nuke.thisNode()\n\n    # Toggle between \"Add Projection\"/\"Remove Projection\" button.\n    if has_projection:\n        data = \{\"add_projection\": False,\n                \"del_projection\": True,\n                \"tile_color\": 65535\}\n    else:\n        data = \{\"add_projection\": True,\n                \"del_projection\": False,\n                \"tile_color\": 0\}\n\n    camera\[\"add_projection\"].setVisible(data\[\"add_projection\"])\n    camera\[\"del_projection\"].setVisible(data\[\"del_projection\"])\n    camera\[\"tile_color\"].setValue(data\[\"tile_color\"])\n\n    # other knobs can be added for showing or hiding them when\n    # the proj. setup added or removed.\n    knobs = \[\"projection_frame\"]\n\n    # Show/hide the knob(s) while adding/removing the proj. setup.\n    for knob in knobs:\n        camera\[knob].setVisible(has_projection)\n\n    # Create or Delete the projection setup.\n    if has_projection:\n        # Create Frame hold node for camera\n        framehold_cam = nuke.nodes.FrameHold()\n        framehold_cam.setInput(0, camera)\n        framehold_cam.setXYpos(int(camera.xpos()), int(camera.ypos()) + 150)\n        framehold_cam\[\"first_frame\"].setExpression(\n            f\"parent.\{camera.name()\}.knob.projection_frame\")\n\n        append_id_knob(id(camera), framehold_cam)\n\n        # Create Frame hold node for source frame.\n        framehold_cam.selectOnly()\n        nukescripts.node_copypaste()\n        framehold_src = nuke.selectedNode()\n        framehold_src.setXYpos(int(camera.xpos()) + 150,\n                               int(camera.ypos()) + 100)\n\n        # Project3D node\n        project3d = nuke.nodes.Project3D2()\n        project3d.setInput(0, framehold_src)\n        project3d.setInput(1, framehold_cam)\n        project3d.setXYpos(int(framehold_src.xpos()),\n                           int(framehold_src.ypos() + 50))\n        append_id_knob(id(camera), project3d)\n\n        # Set projection frame and projection frame ranges.\n        first_frame = int(nuke.root()\[\"first_frame\"].getValue())\n        last_frame = int(nuke.root()\[\"last_frame\"].getValue())\n        camera\[\"projection_frame\"].setRange(first_frame, last_frame)\n        camera\[\"projection_frame\"].setValue(nuke.frame())\n\n    # Remove projection nodes.\n    else:\n        for node in nuke.allNodes():\n            camera_id_knob = node.knobs().get(\"camera_id\")\n            if camera_id_knob and camera_id_knob.value() == str(id(camera)):\n                nuke.delete(node)\n\n\ndef append_id_knob(id_, target_node):\n    id_knob = nuke.Text_Knob(\"camera_id\", \"camera id\", str(id_))\n    id_knob.setVisible(False)\n    target_node.addKnob(id_knob)" +STARTLINE}
+ addUserKnob {22 add_projection l "Add Projection" T set_projection(True) +STARTLINE}
+ addUserKnob {22 del_projection l "Remove Projection" -STARTLINE +HIDDEN T set_projection(False)}
+ addUserKnob {7 projection_frame l "Projection Frame" +HIDDEN R 1001 1250}
+ projection_frame 1066
+}
